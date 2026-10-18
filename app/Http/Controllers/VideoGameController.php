@@ -2,33 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Videogame;
 use Illuminate\Http\Request;
 
 class VideoGameController extends Controller
 {
     public function index(Request $request)
     {
-        $games = $this->games();
+        $games = Videogame::all();
 
         $genre = $request->query('genre', 'all');
         $developer = $request->query('developer', 'all');
 
-        $filtered = [];
-
-        foreach ($games as $item) {
-            $genreMatch = $genre === 'all' || $item['genre'] === $genre;
-            $developerMatch = $developer === 'all' || $item['developer'] === $developer;
-
-            if ($genreMatch && $developerMatch) {
-                $filtered[] = $item;
-            }
-        }
-
-        return view('games.index', [
-            'games' => $filtered,
-            'genre' => $genre,
-            'developer' => $developer
-        ]);
+        return view('games.index', compact('games', 'genre', 'developer'));
     }
 
     public function create()
@@ -45,21 +31,7 @@ class VideoGameController extends Controller
             'year' => 'required|numeric|min:1900|max:2026'
         ]);
 
-        $games = $this->games();
-
-        $id = 1;
-
-        foreach ($games as $item) {
-            if ($item['id'] >= $id) {
-                $id = $item['id'] + 1;
-            }
-        }
-
-        $data['id'] = $id;
-
-        $games[$id] = $data;
-
-        $this->saveGames($games);
+        Videogame::create($data);
 
         return redirect()->route('games.index')
             ->with('success', 'Video game added successfully.');
@@ -67,57 +39,15 @@ class VideoGameController extends Controller
 
     public function show(string $id)
     {
-        $games = $this->games();
+        $game = Videogame::findOrFail($id);
 
-        if (!isset($games[$id])) {
-            abort(404);
-        }
-
-        $item = $games[$id];
-
-        return view('games.show', [
-            'item' => $item
-        ]);
-    }
-
-    public function edit(string $id)
-    {
-        //
-    }
-
-    public function update(Request $request, string $id)
-    {
-        //
-    }
-
-    public function destroy(string $id)
-    {
-        //
+        return view('games.show', ['item' => $game]);
     }
 
     public function featured()
     {
-        $games = $this->games();
+        $item = Videogame::findOrFail(3);
 
-        $item = $games[3];
-
-        return view('games.featured', [
-            'item' => $item
-        ]);
-    }
-
-    private function games()
-    {
-        $path = storage_path('app/private/games.json');
-
-        return json_decode(file_get_contents($path), true);
-    }
-
-    private function saveGames(array $games)
-    {
-        file_put_contents(
-            storage_path('app/private/games.json'),
-            json_encode($games, JSON_PRETTY_PRINT)
-        );
+        return view('games.featured', ['item' => $item]);
     }
 }
